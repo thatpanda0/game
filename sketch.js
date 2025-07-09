@@ -1,71 +1,153 @@
-// sketch.js
-
-let keysPressed = {}
+let keysPressed = {};
 let xv = 0;
 let yv = 0;
-let xpos = 200;
-let ypos = 200;
+let xpos, ypos;
 
 let bullets = [];
 let chasers = [];
 
 let font;
 let interval = 2000;
-let playerAlive = true;
+let score = 0;
+
+let gameState = 'title'; // 'title', 'playing', 'gameover'
+let paused = false;
+
+const CHASER_SPEED = 9;
+const MIN_SPAWN_DIST = 90;
 
 function preload() {
-  // assumes ewq.ttf lives next to index.html & sketch.js
   font = loadFont('ewq.ttf');
 }
 
 function setup() {
   createCanvas(windowWidth, windowHeight);
   textFont(font);
-  setInterval(spawnChaser, interval);
+  resetGame();
+}
+
+function resetGame() {
+  // initialize or reset all variables
+  xpos = width / 2;
+  ypos = height / 2;
+  xv = yv = 0;
+  bullets = [];
+  chasers = [];
+  score = 0;
+  playerAlive = true;
+  clearInterval(this._spawnInterval);
+  this._spawnInterval = setInterval(spawnChaser, interval);
 }
 
 function spawnChaser() {
-  chasers.push({
-    x: random(width),
-    y: random(height),
-    speed: 3 + random(4),
-    alive: true
-  });
+  // ensure spawn at least MIN_SPAWN_DIST away
+  let x, y;
+  do {
+    x = random(width);
+    y = random(height);
+  } while (dist(x, y, xpos, ypos) < MIN_SPAWN_DIST);
+
+  chasers.push({ x, y, speed: CHASER_SPEED, alive: true });
 }
 
 function draw() {
   background(23);
+  fill(255);
+  textAlign(CENTER, CENTER);
 
-  if (playerAlive) {
-    handleInput();
-    movePlayer();
+  if (gameState === 'title') {
+    titleScreen();
+  }
+  else if (gameState === 'playing') {
+    if (!paused) {
+      handleInput();
+      movePlayer();
+      moveChasers();
+      updateBullets();
+      checkPlayerCollision();
+    }
     drawPlayer();
-    moveChasers();
     drawChasers();
-    updateBullets();
     drawBullets();
-    checkPlayerCollision();
+    drawScore();
+
+    if (paused) {
+      fill(255, 255, 0, 200);
+      textSize(64);
+      textAlign(CENTER);
+      text('PAUSED', width/2, height/2);
+    }
+
+    if (!playerAlive) {
+      gameState = 'gameover';
+    }
+  }
+  else if (gameState === 'gameover') {
+    gameOverScreen();
+  }
+}
+
+function titleScreen() {
+  fill(200);
+  textSize(72);
+  text('undefined', width/2, height/2 - 100);
+
+  // play button
+  let bw = 200, bh = 60;
+  let bx = width/2 - bw/2, by = height/2;
+  fill(100, 200, 100);
+  rect(bx, by, bw, bh, 10);
+  fill(0);
+  textSize(32);
+  text('play', width/2, by + bh/2);
+}
+
+function gameOverScreen() {
+  fill(200, 0, 0);
+  textAlign(CENTER);
+  textSize(60);
+  text("Game Over", width / 2, height / 2 - 80);
+  drawScore(true);
+
+  // restart button
+  let bw = 220, bh = 60;
+  let bx = width/2 - bw/2, by = height/2 + 20;
+  fill(100, 200, 100);
+  rect(bx, by, bw, bh, 10);
+  fill(0);
+
+  textSize(32);
+  text('restart', width/2, by + bh/2);
+}
+
+function drawScore(onGameOver=false) {
+  fill(255);
+  textSize(24);
+  textAlign(LEFT, TOP);
+  if (!onGameOver) {
+    text(`Score: ${score}`, 20, 20);
   } else {
-    fill(200, 0, 0);
-    textSize(60);
-    textAlign(CENTER, CENTER);
-    text("Game Over", width / 2, height / 2 - 50);
+    text(`Score: ${score}`, width/2, height/2 - 20);
   }
 }
 
 function handleInput() {
-  // Simple WASD thrust
-  if (keyIsDown(68)) xv += 1; // D
-  if (keyIsDown(65)) xv -= 1; // A
-  if (keyIsDown(87)) yv -= 1; // W
-  if (keyIsDown(83)) yv += 1; // S
+  const acc = Math.max(windowWidth, windowHeight) / 1000;
+  if (keyIsDown(68)) xv += acc;
+  if (keyIsDown(65)) xv -= acc;
+  if (keyIsDown(87)) yv -= acc;
+  if (keyIsDown(83)) yv += acc;
+}
+
+function keyPressed() {
+  if (gameState === 'playing' && key === 'p') {
+    paused = !paused;
+  }
 }
 
 function movePlayer() {
   xv *= 0.9; yv *= 0.9;
   xpos += xv; ypos += yv;
-
-  // keep on‐screen
   xpos = constrain(xpos, 15, width  - 15);
   ypos = constrain(ypos, 15, height - 15);
 }
@@ -98,14 +180,35 @@ function drawChasers() {
 }
 
 function mousePressed() {
-  let angle = atan2(mouseY - ypos, mouseX - xpos);
-  let speed = 10;
-  bullets.push({
-    x: xpos, y: ypos,
-    vx: cos(angle) * speed,
-    vy: sin(angle) * speed,
-    r: 5
-  });
+  if (gameState === 'title') {
+    // check play button
+    let bw = 200, bh = 60;
+    let bx = width/2 - bw/2, by = height/2;
+    if (mouseX > bx && mouseX < bx + bw && mouseY > by && mouseY < by + bh) {
+      gameState = 'playing';
+      resetGame();
+    }
+  }
+  else if (gameState === 'gameover') {
+    // check restart button
+    let bw = 220, bh = 60;
+    let bx = width/2 - bw/2, by = height/2 + 20;
+    if (mouseX > bx && mouseX < bx + bw && mouseY > by && mouseY < by + bh) {
+      gameState = 'playing';
+      resetGame();
+    }
+  }
+  else if (gameState === 'playing' && !paused) {
+    // shoot bullet
+    let angle = atan2(mouseY - ypos, mouseX - xpos);
+    let speed = 10;
+    bullets.push({
+      x: xpos, y: ypos,
+      vx: cos(angle) * speed,
+      vy: sin(angle) * speed,
+      r: 5
+    });
+  }
 }
 
 function updateBullets() {
@@ -113,17 +216,16 @@ function updateBullets() {
     let b = bullets[i];
     b.x += b.vx; b.y += b.vy;
 
-    // remove off‐screen
     if (b.x < 0 || b.x > width || b.y < 0 || b.y > height) {
       bullets.splice(i, 1);
       continue;
     }
 
-    // hit test
     for (let c of chasers) {
       if (c.alive && dist(b.x, b.y, c.x, c.y) < 15 + b.r) {
         c.alive = false;
         bullets.splice(i, 1);
+        score++;
         break;
       }
     }
@@ -142,12 +244,12 @@ function checkPlayerCollision() {
   for (let c of chasers) {
     if (c.alive && dist(xpos, ypos, c.x, c.y) < 30) {
       playerAlive = false;
+      clearInterval(this._spawnInterval);
       break;
     }
   }
 }
 
-// Optional: resize canvas if the window changes size
 function windowResized() {
   resizeCanvas(windowWidth, windowHeight);
 }
