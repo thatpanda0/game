@@ -1,0 +1,6 @@
+/* style.css */
+body {
+  margin: 0;
+  overflow: hidden; /* prevent scrollbars */
+  background: #171717;
+}
