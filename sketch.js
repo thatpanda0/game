@@ -14,7 +14,7 @@ let gameState = 'title'; // 'title', 'playing', 'gameover'
 let paused = false;
 
 const CHASER_SPEED = 9;
-const MIN_SPAWN_DIST = 90;
+const MIN_SPAWN_DIST = 900;
 
 function preload() {
   font = loadFont('ewq.ttf');
@@ -27,7 +27,6 @@ function setup() {
 }
 
 function resetGame() {
-  // initialize or reset all variables
   xpos = width / 2;
   ypos = height / 2;
   xv = yv = 0;
@@ -74,7 +73,6 @@ function draw() {
     if (paused) {
       fill(255, 255, 0, 200);
       textSize(64);
-      textAlign(CENTER);
       text('PAUSED', width/2, height/2);
     }
 
@@ -96,10 +94,10 @@ function titleScreen() {
   let bw = 200, bh = 60;
   let bx = width/2 - bw/2, by = height/2;
   fill(100, 200, 100);
-  rect(bx, by, bw, bh, 10);
+  rect(bx, by, bw, bh, 25);
   fill(0);
-  textSize(32);
-  text('play', width/2, by + bh/2);
+  textSize(24);
+  text('play', width/2, by + 3*bh/8);
 }
 
 function gameOverScreen() {
@@ -113,11 +111,10 @@ function gameOverScreen() {
   let bw = 220, bh = 60;
   let bx = width/2 - bw/2, by = height/2 + 20;
   fill(100, 200, 100);
-  rect(bx, by, bw, bh, 10);
+  rect(bx, by, bw, bh, 25);
   fill(0);
-
-  textSize(32);
-  text('restart', width/2, by + bh/2);
+  textAlign(CENTER);
+  text('restart', width/2, by + bh/4);
 }
 
 function drawScore(onGameOver=false) {
@@ -125,8 +122,9 @@ function drawScore(onGameOver=false) {
   textSize(24);
   textAlign(LEFT, TOP);
   if (!onGameOver) {
-    text(`Score: ${score}`, 20, 20);
+    text(score, 20, 20);
   } else {
+    textAlign(CENTER);
     text(`Score: ${score}`, width/2, height/2 - 20);
   }
 }
