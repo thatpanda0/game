@@ -5,6 +5,7 @@ let xpos, ypos;
 
 let bullets = [];
 let chasers = [];
+let chaserBullets = [];
 
 let font;
 let interval = 2000;
@@ -13,7 +14,7 @@ let score = 0;
 let gameState = 'title'; // 'title', 'playing', 'gameover'
 let paused = false;
 
-const CHASER_SPEED = 7 + Math.random(16);
+const CHASER_SPEED = 3 + Math.random(1);
 let MIN_SPAWN_DIST;
 
 let spawnIntervalId;
@@ -37,6 +38,7 @@ function resetGame() {
   xv = yv = 0;
   bullets = [];
   chasers = [];
+  chaserBullets = [];
   score = 0;
   playerAlive = true;
 }
@@ -60,8 +62,12 @@ function spawnChaser() {
     }
   } while (dist(x, y, xpos, ypos) < MIN_SPAWN_DIST);
 
-  chasers.push({ x, y, speed: CHASER_SPEED, alive: true });
-  console.log("a")
+    chasers.push({
+    x, y,
+    speed: CHASER_SPEED,
+    alive: true,
+    nextShot: millis() + random(500, 2000)   // fire in 0.5–2s
+  });
 }
 
 
@@ -78,11 +84,14 @@ function draw() {
       handleInput();
       movePlayer();
       moveChasers();
+      updateChaserShooting();
+      updateChaserBullets();
       updateBullets();
       checkPlayerCollision();
     }
     drawPlayer();
     drawChasers();
+    drawChaserBullets();
     drawBullets();
     drawScore();
 
@@ -193,6 +202,15 @@ function drawChasers() {
   }
 }
 
+function drawChaserBullets() {
+  fill(255, 150, 0);
+  noStroke();
+  for (let b of chaserBullets) {
+    circle(b.x, b.y, b.r*2);
+  }
+}
+
+
 function mousePressed() {
   if (gameState === 'title') {
     // check play button
@@ -253,6 +271,65 @@ function drawBullets() {
     circle(b.x, b.y, b.r * 2);
   }
 }
+
+
+
+function updateChaserShooting() {
+  const SPREAD = radians(10);
+  const BULLET_S = 12; // speed and random angle
+  for (let c of chasers) {
+    if (!c.alive) continue;
+    if (millis() >= c.nextShot) {
+      // schedule next shot
+      c.nextShot = millis() + random(800, 2000);
+      // aim at player + random spread
+      let baseAng = atan2(ypos - c.y, xpos - c.x);
+      let ang     = baseAng + random(-SPREAD, SPREAD);
+      chaserBullets.push({
+        x:   c.x,
+        y:   c.y,
+        vx:  cos(ang) * BULLET_S,
+        vy:  sin(ang) * BULLET_S,
+        r:   5
+      });
+    }
+  }
+}
+
+function updateChaserBullets() {
+  // loop backwards so we can splice safely
+  for (let i = chaserBullets.length - 1; i >= 0; i--) {
+    let b = chaserBullets[i];
+    b.x += b.vx;
+    b.y += b.vy;
+
+    // off screen?
+    if (b.x < 0 || b.x > width || b.y < 0 || b.y > height) {
+      chaserBullets.splice(i, 1);
+      continue;
+    }
+
+    // hit player?
+    if (dist(b.x, b.y, xpos, ypos) < b.r + 15) {
+      playerAlive = false;
+      return;
+    }
+
+    // collide with player bullets?
+    for (let j = bullets.length - 1; j >= 0; j--) {
+      let pb = bullets[j];
+      if (dist(b.x, b.y, pb.x, pb.y) < b.r + pb.r) {
+        // destroy both
+        chaserBullets.splice(i, 1);
+        bullets.splice(j, 1);
+        break;
+      }
+    }
+  }
+}
+
+
+
 
 function checkPlayerCollision() {
   for (let c of chasers) {
