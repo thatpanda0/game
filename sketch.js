@@ -13,8 +13,10 @@ let score = 0;
 let gameState = 'title'; // 'title', 'playing', 'gameover'
 let paused = false;
 
-const CHASER_SPEED = 7 + random(6);
-const MIN_SPAWN_DIST = 900;
+const CHASER_SPEED = 7 + Math.random(16);
+let MIN_SPAWN_DIST;
+
+let spawnIntervalId;
 
 function preload() {
   font = loadFont('ewq.ttf');
@@ -27,6 +29,9 @@ function setup() {
 }
 
 function resetGame() {
+  MIN_SPAWN_DIST = min(900, sqrt(width*width + height*height) * 0.5);
+  if (spawnIntervalId) clearInterval(spawnIntervalId);
+  spawnIntervalId = setInterval(spawnChaser, interval);
   xpos = width / 2;
   ypos = height / 2;
   xv = yv = 0;
@@ -34,20 +39,31 @@ function resetGame() {
   chasers = [];
   score = 0;
   playerAlive = true;
-  clearInterval(this._spawnInterval);
-  this._spawnInterval = setInterval(spawnChaser, interval);
 }
 
 function spawnChaser() {
-  // ensure spawn at least MIN_SPAWN_DIST away
   let x, y;
+  let tries = 0;
   do {
     x = random(width);
     y = random(height);
+    if (++tries > 30) {
+      // fallback: choose a random edge position
+      if (random() < 0.5) {
+        x = random() < 0.5 ? 0 : width;
+        y = random(height);
+      } else {
+        x = random(width);
+        y = random() < 0.5 ? 0 : height;
+      }
+      break;
+    }
   } while (dist(x, y, xpos, ypos) < MIN_SPAWN_DIST);
 
   chasers.push({ x, y, speed: CHASER_SPEED, alive: true });
+  console.log("a")
 }
+
 
 function draw() {
   background(23);
