@@ -13,7 +13,7 @@ let score = 0;
 let gameState = 'title'; // 'title', 'playing', 'gameover'
 let paused = false;
 
-const CHASER_SPEED = 9;
+const CHASER_SPEED = 7 + random(6);
 const MIN_SPAWN_DIST = 900;
 
 function preload() {
