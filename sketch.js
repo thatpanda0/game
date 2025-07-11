@@ -19,7 +19,7 @@ let spawnIntervalId;
 
 let firing = false;
 let lastShotTime = 0;
-const SHOT_INTERVAL = 300; //ms between held bullets
+const SHOT_INTERVAL = 400; //ms between held bullets
 
 function preload() {
   font = loadFont('ewq.ttf');
@@ -106,6 +106,7 @@ function draw() {
     if (paused) {
       fill(255, 255, 0, 200);
       textSize(64);
+      textAlign(CENTER);
       text('PAUSED', width/2, height/2);
     }
 
@@ -171,10 +172,18 @@ function handleInput() {
 }
 
 function keyPressed() {
-  if (gameState === 'playing' && key === 'p') {
-    paused = !paused;
+  if (gameState !== 'playing' || key !== 'p') return;
+
+  paused = !paused;
+
+  if (paused) {
+    clearInterval(spawnIntervalId);
+  } else {
+
+    spawnIntervalId = setInterval(spawnChaser, interval);
   }
 }
+
 
 function movePlayer() {
   xv *= 0.9; yv *= 0.9;
