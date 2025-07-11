@@ -163,7 +163,7 @@ function drawScore(onGameOver=false) {
 }
 
 function handleInput() {
-  const acc = 9;// Math.max(windowWidth, windowHeight) / 1000;
+  const acc = 2;// Math.max(windowWidth, windowHeight) / 1000;
   if (keyIsDown(68)) xv += acc;
   if (keyIsDown(65)) xv -= acc;
   if (keyIsDown(87)) yv -= acc;
