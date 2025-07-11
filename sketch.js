@@ -14,10 +14,12 @@ let score = 0;
 let gameState = 'title'; // 'title', 'playing', 'gameover'
 let paused = false;
 
-const CHASER_SPEED = 3 + Math.random(1);
 let MIN_SPAWN_DIST;
-
 let spawnIntervalId;
+
+let firing = false;
+let lastShotTime = 0;
+const SHOT_INTERVAL = 300; //ms between held bullets
 
 function preload() {
   font = loadFont('ewq.ttf');
@@ -64,7 +66,7 @@ function spawnChaser() {
 
     chasers.push({
     x, y,
-    speed: CHASER_SPEED,
+    speed: 7 + random(14),
     alive: true,
     nextShot: millis() + random(500, 2000)   // fire in 0.5–2s
   });
@@ -88,6 +90,12 @@ function draw() {
       updateChaserBullets();
       updateBullets();
       checkPlayerCollision();
+      
+      if (firing && millis() - lastShotTime > SHOT_INTERVAL) {
+        shootBullet();
+        lastShotTime = millis();
+      }
+
     }
     drawPlayer();
     drawChasers();
@@ -155,7 +163,7 @@ function drawScore(onGameOver=false) {
 }
 
 function handleInput() {
-  const acc = Math.max(windowWidth, windowHeight) / 1000;
+  const acc = 9;// Math.max(windowWidth, windowHeight) / 1000;
   if (keyIsDown(68)) xv += acc;
   if (keyIsDown(65)) xv -= acc;
   if (keyIsDown(87)) yv -= acc;
@@ -211,37 +219,43 @@ function drawChaserBullets() {
 }
 
 
+function shootBullet() {
+  let angle = atan2(mouseY - ypos, mouseX - xpos);
+  let speed = 10;
+  bullets.push({
+    x: xpos,
+    y: ypos,
+    vx: cos(angle) * speed,
+    vy: sin(angle) * speed,
+    r: 5
+  });
+}
+
 function mousePressed() {
   if (gameState === 'title') {
-    // check play button
     let bw = 200, bh = 60;
-    let bx = width/2 - bw/2, by = height/2;
+    let bx = width / 2 - bw / 2, by = height / 2;
     if (mouseX > bx && mouseX < bx + bw && mouseY > by && mouseY < by + bh) {
       gameState = 'playing';
       resetGame();
     }
-  }
-  else if (gameState === 'gameover') {
-    // check restart button
+  } else if (gameState === 'gameover') {
     let bw = 220, bh = 60;
-    let bx = width/2 - bw/2, by = height/2 + 20;
+    let bx = width / 2 - bw / 2, by = height / 2 + 20;
     if (mouseX > bx && mouseX < bx + bw && mouseY > by && mouseY < by + bh) {
       gameState = 'playing';
       resetGame();
     }
-  }
-  else if (gameState === 'playing' && !paused) {
-    // shoot bullet
-    let angle = atan2(mouseY - ypos, mouseX - xpos);
-    let speed = 10;
-    bullets.push({
-      x: xpos, y: ypos,
-      vx: cos(angle) * speed,
-      vy: sin(angle) * speed,
-      r: 5
-    });
+  } else if (gameState === 'playing' && !paused) {
+    firing = true;
+    lastShotTime = millis() - SHOT_INTERVAL; // Fire immediately
   }
 }
+
+function mouseReleased() {
+  firing = false;
+}
+
 
 function updateBullets() {
   for (let i = bullets.length - 1; i >= 0; i--) {
@@ -276,12 +290,12 @@ function drawBullets() {
 
 function updateChaserShooting() {
   const SPREAD = radians(10);
-  const BULLET_S = 12; // speed and random angle
+  const BULLET_S = 16; // speed and random angle
   for (let c of chasers) {
     if (!c.alive) continue;
     if (millis() >= c.nextShot) {
       // schedule next shot
-      c.nextShot = millis() + random(800, 2000);
+      c.nextShot = millis() + random(400, 1000);
       // aim at player + random spread
       let baseAng = atan2(ypos - c.y, xpos - c.x);
       let ang     = baseAng + random(-SPREAD, SPREAD);
