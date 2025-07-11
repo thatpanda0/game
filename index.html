@@ -9,5 +9,15 @@
 </head>
 <body>
   <script src="sketch.js"></script>
+  <script>
+    document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    clearInterval(spawnIntervalId);
+  }
+  else if (gameState === 'playing' && !paused) {
+    spawnIntervalId = setInterval(spawnChaser, interval);
+  }
+});
+  </script>
 </body>
 </html>
