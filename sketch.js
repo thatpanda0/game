@@ -66,7 +66,7 @@ function spawnChaser() {
 
     chasers.push({
     x, y,
-    speed: 7 + random(14),
+    speed: 7 + random(8),
     alive: true,
     nextShot: millis() + random(500, 2000)   // fire in 0.5–2s
   });
